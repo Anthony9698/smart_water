@@ -18,6 +18,7 @@ struct RoomCardView: View {
             Text(name)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .foregroundStyle(Color.black)
 
             Spacer()
 
