@@ -22,17 +22,13 @@ final class PlantsViewModel: ObservableObject {
 
     func createPlant(
         name: String,
-        species: String?,
         roomId: String,
-        moistureEntityId: String?,
-        pumpEntityId: String?
+        species: String? = nil
     ) async throws {
         let plant = try await api.createPlant(
             name: name,
             roomId: roomId,
-            species: species,
-            moistureEntityId: moistureEntityId,
-            pumpEntityId: pumpEntityId
+            species: species
         )
         plants.append(plant)
     }

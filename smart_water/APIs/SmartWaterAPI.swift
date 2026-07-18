@@ -18,7 +18,7 @@ struct SmartWaterAPI {
     func getRooms() async throws -> [Room] {
         try await get(path: "api/rooms")
     }
-    
+
     func getPlants(roomId: String) async throws -> [Plant] {
         try await get(
             path: "api/plants",
@@ -26,7 +26,7 @@ struct SmartWaterAPI {
                 URLQueryItem(
                     name: "room_id",
                     value: roomId
-                )
+                ),
             ]
         )
     }
@@ -43,16 +43,12 @@ struct SmartWaterAPI {
     func createPlant(
         name: String,
         roomId: String,
-        species: String? = nil,
-        moistureEntityId: String? = nil,
-        pumpEntityId: String? = nil
+        species: String? = nil
     ) async throws -> Plant {
         let payload = CreatePlantRequest(
             name: name,
             roomId: roomId,
-            species: species,
-            moistureEntityId: moistureEntityId,
-            pumpEntityId: pumpEntityId
+            species: species
         )
 
         return try await post(path: "api/plants", body: payload)
@@ -115,7 +111,7 @@ struct SmartWaterAPI {
             throw APIError.invalidResponse
         }
 
-        guard 200..<300 ~= httpResponse.statusCode else {
+        guard 200 ..< 300 ~= httpResponse.statusCode else {
             throw APIError.httpError(
                 statusCode: httpResponse.statusCode
             )

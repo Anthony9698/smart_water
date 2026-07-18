@@ -1,5 +1,5 @@
 //
-//  CardView.swift
+//  RoomCardView.swift
 //  smart_water
 //
 //  Created by Anthony Viera on 7/10/26.
@@ -7,13 +7,12 @@
 
 import SwiftUI
 
-
 struct RoomCardView: View {
     let room: Room
 
     var body: some View {
         VStack {
-            Text(room.name)
+            Text(room.name.capitalized)
 
             Text(plantCountText)
         }
@@ -33,4 +32,3 @@ struct RoomCardView: View {
 #Preview {
     RoomCardView(room: Room(id: "1", name: "kitchen", plantCount: 2))
 }
-

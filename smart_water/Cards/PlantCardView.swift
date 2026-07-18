@@ -1,5 +1,5 @@
 //
-//  PlantCard.swift
+//  PlantCardView.swift
 //  smart_water
 //
 //  Created by Anthony Viera on 7/12/26.
@@ -8,21 +8,31 @@
 import SwiftUI
 
 struct PlantCardView: View {
-    let name: String
-    
+    let plant: Plant
+
     var body: some View {
-        HStack() {
-            Text(name)
+        HStack {
+            Text(plant.name.capitalized)
                 .foregroundStyle(Color.black)
             Spacer()
         }
-        .padding(8)
-        .background(Color.gray)
+        .padding(24)
+        .background(Color(.gray).opacity(0.1))
         .frame(width: 350, height: 65)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
 #Preview {
-    PlantCardView(name: "Monstera")
+    PlantCardView(
+        plant: Plant(
+            id: "preview-plant",
+            name: "Monstera",
+            roomId: "preview-room",
+            species: "Monstera deliciosa",
+            moistureEntityId: nil,
+            pumpEntityId: nil,
+            photoUrl: nil
+        )
+    )
 }

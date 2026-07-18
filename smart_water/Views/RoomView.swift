@@ -33,7 +33,7 @@ struct RoomView: View {
                                 selectedPlant = plant
                             } label: {
                                 PlantCardView(
-                                    name: plant.name,
+                                    plant: plant
                                 )
                             }
                             .buttonStyle(.plain)
@@ -41,6 +41,15 @@ struct RoomView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 40)
+                }
+            }
+            .sheet(isPresented: $isShowingAddPlant) {
+                AddPlantView(room: room) { name, species in
+                    try await viewModel.createPlant(
+                        name: name,
+                        roomId: room.id,
+                        species: species
+                    )
                 }
             }
             .task {
@@ -52,7 +61,7 @@ struct RoomView: View {
 
             Spacer()
         }
-        .navigationTitle("\(room.name) Plants")
+        .navigationTitle("\(room.name) Plants".capitalized)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -70,7 +79,6 @@ struct RoomView: View {
         }
         .padding(.top, 32)
         .padding(.bottom, 32)
-        .background(Color.white)
         .background(Color.white)
         .navigationBarBackButtonHidden(true)
         .sheet(item: $selectedPlant) { plant in

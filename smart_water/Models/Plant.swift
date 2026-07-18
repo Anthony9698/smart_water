@@ -11,7 +11,8 @@ struct Plant: Identifiable, Decodable {
     let id: String
     let name: String
     let roomId: String
-    let moistureEntityId: String
-    let pumpEntityId: String
-    let photoUrl: String
+    let species: String?
+    let moistureEntityId: String?
+    let pumpEntityId: String?
+    let photoUrl: String?
 }
