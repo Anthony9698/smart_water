@@ -31,7 +31,7 @@ struct RoomsView: View {
                         LazyVGrid(columns: columns, spacing: 24) {
                             ForEach(viewModel.rooms) { room in
                                 NavigationLink() {
-                                    RoomView(room: room.name, plantCount: room.plantCount)
+                                    RoomView(room: room)
                                 } label: {
                                     RoomCardView(room: room)
                                 }
@@ -44,7 +44,7 @@ struct RoomsView: View {
                 }
                 .sheet(isPresented: $isShowingAddRoom) {
                     AddRoomView { name in
-                        print("Room submitted:", name)
+                        try await viewModel.createRoom(name: name)
                     }
                 }
                 .task {

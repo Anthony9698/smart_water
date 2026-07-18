@@ -9,20 +9,12 @@ import SwiftUI
 
 struct PlantCardView: View {
     let name: String
-    let lastWatered: String
     
     var body: some View {
         HStack() {
             Text(name)
                 .foregroundStyle(Color.black)
             Spacer()
-            HStack() {
-                Image(systemName: "drop.fill").foregroundStyle(Color.blue)
-                    .padding(2)
-                Text(lastWatered)
-                    .foregroundStyle(Color.black)
-                    .italic()
-            }
         }
         .padding(8)
         .background(Color.gray)
@@ -32,5 +24,5 @@ struct PlantCardView: View {
 }
 
 #Preview {
-    PlantCardView(name: "Monstera", lastWatered: "3 days ago")
+    PlantCardView(name: "Monstera")
 }

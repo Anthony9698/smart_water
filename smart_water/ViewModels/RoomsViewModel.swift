@@ -19,6 +19,11 @@ final class RoomsViewModel: ObservableObject {
     init(api: SmartWaterAPI) {
         self.api = api
     }
+    
+    func createRoom(name: String) async throws {
+        let room = try await api.createRoom(name: name)
+        rooms.append(room)
+    }
 
     func loadRooms() async {
         isLoading = true

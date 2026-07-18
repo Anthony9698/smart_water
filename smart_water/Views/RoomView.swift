@@ -7,51 +7,70 @@
 
 import SwiftUI
 
-import SwiftUI
-
 struct RoomView: View {
-    let room: String
-    let plantCount: Int
+    let room: Room
+
+    @State private var isShowingAddPlant = false
+    @StateObject private var viewModel = PlantsViewModel(
+        api: SmartWaterAPI(
+            baseURL: URL(string: "http://192.168.68.64:8000")!
+        )
+    )
 
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedPlant: Plant?
 
-    let plants = [
-        Plant(name: "Monstera 1", lastWatered: "Yesterday"),
-        Plant(name: "Monstera 2", lastWatered: "2 days ago")
-    ]
-
     var body: some View {
         VStack {
-            header
-
-            HStack {
-                Text("Plants")
-                    .font(.headline)
-
-                Spacer()
-            }
-            .padding(24)
-
-            VStack(spacing: 12) {
-                ForEach(plants) { plant in
-                    Button {
-                        selectedPlant = plant
-                    } label: {
-                        PlantCardView(
-                            name: plant.name,
-                            lastWatered: plant.lastWatered
-                        )
+            ScrollView {
+                if viewModel.isLoading && viewModel.plants.isEmpty {
+                    ProgressView("Loading plants...")
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(viewModel.plants) { plant in
+                            Button {
+                                selectedPlant = plant
+                            } label: {
+                                PlantCardView(
+                                    name: plant.name,
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 40)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 40)
+            .task {
+                await viewModel.loadPlants(roomId: room.id)
+            }
+            .refreshable {
+                await viewModel.loadPlants(roomId: room.id)
+            }
 
             Spacer()
         }
+        .navigationTitle("\(room.name) Plants")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Back") {
+                    dismiss()
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    isShowingAddPlant = true
+                } label: {
+                    Label("Add Plant", systemImage: "plus")
+                }
+            }
+        }
+        .padding(.top, 32)
+        .padding(.bottom, 32)
+        .background(Color.white)
         .background(Color.white)
         .navigationBarBackButtonHidden(true)
         .sheet(item: $selectedPlant) { plant in
@@ -63,35 +82,16 @@ struct RoomView: View {
             .presentationDragIndicator(.visible)
         }
     }
-
-    private var header: some View {
-        HStack {
-            Button {
-                dismiss()
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "arrowshape.backward.fill")
-                    Text(room)
-                }
-                .foregroundStyle(.black)
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 12)
-        .padding(.bottom, 12)
-    }
-}
-
-struct Plant: Identifiable {
-    let id = UUID()
-    let name: String
-    let lastWatered: String
 }
 
 #Preview {
     NavigationStack {
-        RoomView(room: "Kitchen", plantCount: 0)
+        RoomView(
+            room: Room(
+                id: "preview-room",
+                name: "Kitchen",
+                plantCount: 0
+            )
+        )
     }
 }
