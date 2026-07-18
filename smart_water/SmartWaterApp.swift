@@ -8,10 +8,10 @@
 import SwiftUI
 
 @main
-struct smart_waterApp: App {
+struct SmartWaterApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RoomsView()
         }
     }
 }

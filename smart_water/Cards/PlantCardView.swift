@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct PlantCard: View {
+struct PlantCardView: View {
     let name: String
     let lastWatered: String
     
@@ -32,5 +32,5 @@ struct PlantCard: View {
 }
 
 #Preview {
-    PlantCard(name: "Monstera", lastWatered: "3 days ago")
+    PlantCardView(name: "Monstera", lastWatered: "3 days ago")
 }
