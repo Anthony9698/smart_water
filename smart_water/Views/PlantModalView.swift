@@ -35,10 +35,6 @@ struct PlantModalView: View {
 
     @Environment(\.dismiss) var dismissModal
 
-    @StateObject private var plantsViewModel = PlantsViewModel(
-        api: SmartWaterAPI()
-    )
-
     var body: some View {
         VStack {
             HStack {

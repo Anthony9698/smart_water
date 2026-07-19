@@ -9,7 +9,6 @@ import SwiftUI
 
 struct RoomView: View {
     let room: Room
-    @State private var relativeTimeReference = Date()
     @State private var isShowingAddPlant = false
     @StateObject private var viewModel = PlantsViewModel(
         api: SmartWaterAPI()
@@ -31,8 +30,7 @@ struct RoomView: View {
                                 selectedPlant = plant
                             } label: {
                                 PlantCardView(
-                                    plant: plant,
-                                    relativeTo: relativeTimeReference
+                                    plant: plant
                                 )
                             }
                             .buttonStyle(.plain)
@@ -48,28 +46,10 @@ struct RoomView: View {
             )
             .scrollBounceBehavior(.always)
             .refreshable {
-                print("Pull-to-refresh started")
-
                 await viewModel.loadPlants(
                     roomId: room.id,
                     showLoadingIndicator: false
                 )
-
-                print("Pull-to-refresh completed")
-                relativeTimeReference = Date()
-            }
-            .sheet(item: $selectedPlant) { plant in
-                PlantModalView(
-                    plant: plant
-                ) { plantId in
-                    let updatedPlant = try await viewModel.waterPlant(
-                        plantId: plantId
-                    )
-
-                    relativeTimeReference = Date()
-
-                    return updatedPlant
-                }
             }
         }
         .task(id: room.id) {
@@ -98,6 +78,21 @@ struct RoomView: View {
         .padding(.bottom, 32)
         .background(Color.white)
         .navigationBarBackButtonHidden(true)
+        .sheet(isPresented: $isShowingAddPlant) {
+            AddPlantView(room: room) {
+                name,
+                species,
+                selectedSensorId,
+                photoData in
+                try await viewModel.createPlant(
+                    name: name,
+                    roomId: room.id,
+                    species: species,
+                    moistureEntityId: selectedSensorId,
+                    photoData: photoData
+                )
+            }
+        }
         .sheet(item: $selectedPlant) { plant in
             PlantModalView(
                 plant: plant
