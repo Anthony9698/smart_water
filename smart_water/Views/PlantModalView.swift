@@ -8,7 +8,20 @@
 import SwiftUI
 
 struct PlantModalView: View {
-    let plant: Plant
+    @State private var plant: Plant
+    @State private var isWatering = false
+    @State private var errorMessage: String?
+
+    let onWater: (String) async throws -> Plant
+
+    init(
+        plant: Plant,
+        onWater: @escaping (String) async throws -> Plant
+    ) {
+        _plant = State(initialValue: plant)
+        self.onWater = onWater
+    }
+
     private var photoURL: URL? {
         guard let photoPath = plant.photoUrl else {
             return nil
@@ -21,6 +34,10 @@ struct PlantModalView: View {
     }
 
     @Environment(\.dismiss) var dismissModal
+
+    @StateObject private var plantsViewModel = PlantsViewModel(
+        api: SmartWaterAPI()
+    )
 
     var body: some View {
         VStack {
@@ -44,14 +61,36 @@ struct PlantModalView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .clipped()
 
-                Button(action: {}) {
-                    Text("water".capitalized)
-                        .foregroundStyle(Color.white)
-                        .frame(width: 100, height: 48)
+                Button {
+                    Task {
+                        isWatering = true
+                        errorMessage = nil
+
+                        do {
+                            plant = try await onWater(plant.id)
+                        } catch {
+                            errorMessage = error.localizedDescription
+                        }
+
+                        isWatering = false
+                    }
+                } label: {
+                    Text(isWatering ? "Watering..." : "Water")
                         .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .frame(width: 100, height: 48)
+                        .background(.blue)
+                        .clipShape(
+                            RoundedRectangle(cornerRadius: 10)
+                        )
                 }
-                .background(Color.blue)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .disabled(isWatering)
+                .buttonStyle(.plain)
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                }
             }
         }
         .background(Color.white)
@@ -99,6 +138,17 @@ struct PlantModalView: View {
 
 #Preview {
     @Previewable @State var isShowingStandardModal = false
+
+    let previewPlant = Plant(
+        id: "preview-plant",
+        name: "Monstera",
+        roomId: "preview-room",
+        species: "Monstera deliciosa",
+        moistureEntityId: "sensor.soil_moisture_1",
+        pumpEntityId: nil,
+        photoUrl: nil,
+        lastWateredAt: Date().addingTimeInterval(-3600)
+    )
     VStack {
         Text("Main Screen")
         Button(action: { isShowingStandardModal = true }) {
@@ -106,15 +156,21 @@ struct PlantModalView: View {
         }
         .sheet(isPresented: $isShowingStandardModal) {
             PlantModalView(
-                plant: Plant(
-                    id: "preview-plant",
-                    name: "Monstera",
-                    roomId: "preview-room",
-                    species: "Monstera deliciosa",
-                    moistureEntityId: nil,
-                    pumpEntityId: nil,
-                    photoUrl: nil
-                )
+                plant: previewPlant,
+                onWater: { plantId in
+                    print("Watering preview plant:", plantId)
+
+                    return Plant(
+                        id: previewPlant.id,
+                        name: previewPlant.name,
+                        roomId: previewPlant.roomId,
+                        species: previewPlant.species,
+                        moistureEntityId: previewPlant.moistureEntityId,
+                        pumpEntityId: previewPlant.pumpEntityId,
+                        photoUrl: previewPlant.photoUrl,
+                        lastWateredAt: Date()
+                    )
+                }
             )
         }
     }

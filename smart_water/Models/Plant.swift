@@ -15,4 +15,5 @@ struct Plant: Identifiable, Decodable {
     let moistureEntityId: String?
     let pumpEntityId: String?
     let photoUrl: String?
+    let lastWateredAt: Date?
 }

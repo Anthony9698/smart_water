@@ -263,6 +263,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "smart-water-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Smart Water";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Smart Water connects to your local Home Assistant server to manage plants and watering devices.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -320,6 +321,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "smart-water-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Smart Water";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Smart Water connects to your local Home Assistant server to manage plants and watering devices.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;

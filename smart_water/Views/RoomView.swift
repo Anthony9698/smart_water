@@ -9,7 +9,7 @@ import SwiftUI
 
 struct RoomView: View {
     let room: Room
-
+    @State private var relativeTimeReference = Date()
     @State private var isShowingAddPlant = false
     @StateObject private var viewModel = PlantsViewModel(
         api: SmartWaterAPI()
@@ -31,7 +31,8 @@ struct RoomView: View {
                                 selectedPlant = plant
                             } label: {
                                 PlantCardView(
-                                    plant: plant
+                                    plant: plant,
+                                    relativeTo: relativeTimeReference
                                 )
                             }
                             .buttonStyle(.plain)
@@ -41,24 +42,41 @@ struct RoomView: View {
                     .padding(.top, 40)
                 }
             }
-            .sheet(isPresented: $isShowingAddPlant) {
-                AddPlantView(room: room) { name, species, photoData in
-                    try await viewModel.createPlant(
-                        name: name,
-                        roomId: room.id,
-                        species: species,
-                        photoData: photoData
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: .infinity
+            )
+            .scrollBounceBehavior(.always)
+            .refreshable {
+                print("Pull-to-refresh started")
+
+                await viewModel.loadPlants(
+                    roomId: room.id,
+                    showLoadingIndicator: false
+                )
+
+                print("Pull-to-refresh completed")
+                relativeTimeReference = Date()
+            }
+            .sheet(item: $selectedPlant) { plant in
+                PlantModalView(
+                    plant: plant
+                ) { plantId in
+                    let updatedPlant = try await viewModel.waterPlant(
+                        plantId: plantId
                     )
+
+                    relativeTimeReference = Date()
+
+                    return updatedPlant
                 }
             }
-            .task {
-                await viewModel.loadPlants(roomId: room.id)
-            }
-            .refreshable {
-                await viewModel.loadPlants(roomId: room.id)
-            }
-
-            Spacer()
+        }
+        .task(id: room.id) {
+            await viewModel.loadPlants(
+                roomId: room.id,
+                showLoadingIndicator: true
+            )
         }
         .navigationTitle("\(room.name) Plants".capitalized)
         .navigationBarTitleDisplayMode(.inline)
@@ -83,7 +101,11 @@ struct RoomView: View {
         .sheet(item: $selectedPlant) { plant in
             PlantModalView(
                 plant: plant
-            )
+            ) { plantId in
+                try await viewModel.waterPlant(
+                    plantId: plantId
+                )
+            }
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }

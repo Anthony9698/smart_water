@@ -9,7 +9,7 @@ import SwiftUI
 
 struct PlantCardView: View {
     let plant: Plant
-
+    let relativeTo: Date
     private var photoURL: URL? {
         guard let photoPath = plant.photoUrl else {
             return nil
@@ -29,11 +29,15 @@ struct PlantCardView: View {
                 Text(plant.name.capitalized)
                     .font(.headline)
                     .foregroundStyle(.black)
-
-                if let species = plant.species {
-                    Text(species)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                HStack {
+                    Image(systemName: "drop.fill")
+                        .foregroundStyle(.blue)
+                    Text(lastWateredText(
+                        plant.lastWateredAt,
+                        relativeTo: relativeTo
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
             }
 
@@ -88,6 +92,39 @@ struct PlantCardView: View {
                 RoundedRectangle(cornerRadius: 10)
             )
     }
+
+    func lastWateredText(
+        _ date: Date?,
+        relativeTo now: Date
+    ) -> String {
+        guard let date else {
+            return "Never watered"
+        }
+
+        let elapsed = max(
+            0,
+            now.timeIntervalSince(date)
+        )
+
+        if elapsed < 30 {
+            return "Just now"
+        }
+
+        let month: TimeInterval = 30 * 24 * 60 * 60
+
+        if elapsed >= month {
+            return "More than a month ago"
+        }
+
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        formatter.dateTimeStyle = .numeric
+
+        return formatter.localizedString(
+            for: date,
+            relativeTo: now
+        )
+    }
 }
 
 #Preview {
@@ -99,7 +136,9 @@ struct PlantCardView: View {
             species: "Monstera deliciosa",
             moistureEntityId: nil,
             pumpEntityId: nil,
-            photoUrl: nil
-        )
+            photoUrl: nil,
+            lastWateredAt: Date().addingTimeInterval(-300)
+        ),
+        relativeTo: Date()
     )
 }

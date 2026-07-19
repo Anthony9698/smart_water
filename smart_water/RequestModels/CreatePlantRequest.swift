@@ -11,4 +11,5 @@ struct CreatePlantRequest: Encodable {
     let name: String
     let roomId: String
     let species: String?
+    let moistureEntityId: String?
 }

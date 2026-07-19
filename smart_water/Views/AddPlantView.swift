@@ -15,6 +15,7 @@ struct AddPlantView: View {
 
     @State private var name = ""
     @State private var species = ""
+    @State private var selectedSensorId: String?
     @State private var isSaving = false
     @State private var errorMessage: String?
 
@@ -22,7 +23,16 @@ struct AddPlantView: View {
     @State private var photoData: Data?
     @State private var photoErrorMessage: String?
 
-    let onSave: (String, String?, Data?) async throws -> Void
+    @StateObject private var moistureSensorsViewModel = MoistureSensorsViewModel(
+        api: SmartWaterAPI()
+    )
+
+    let onSave: (
+        String,
+        String?,
+        String?,
+        Data?
+    ) async throws -> Void
 
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -98,12 +108,43 @@ struct AddPlantView: View {
                             save()
                         }
                 }
+                Section("Moisture Sensor") {
+                    Picker(
+                        "Sensor",
+                        selection: $selectedSensorId
+                    ) {
+                        Text("No Sensor")
+                            .tag(nil as String?)
+
+                        ForEach(
+                            moistureSensorsViewModel.sensors
+                        ) { sensor in
+                            Text(sensor.name)
+                                .tag(sensor.entityId as String?)
+                        }
+                    }
+
+                    if let message =
+                        moistureSensorsViewModel.errorMessage
+                    {
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+
                 if let errorMessage {
                     Section {
                         Text(errorMessage)
                             .foregroundStyle(.red)
                     }
                 }
+            }
+            .task {
+                await moistureSensorsViewModel.loadSensors()
+            }
+            .refreshable {
+                await moistureSensorsViewModel.loadSensors()
             }
             .navigationTitle("Add \(room.name) Plant".capitalized)
             .navigationBarTitleDisplayMode(.inline)
@@ -184,6 +225,7 @@ struct AddPlantView: View {
                 try await onSave(
                     trimmedName,
                     optionalSpecies,
+                    selectedSensorId,
                     photoData
                 )
 
@@ -203,9 +245,10 @@ struct AddPlantView: View {
             name: "Kitchen",
             plantCount: 0
         )
-    ) { name, species, photoData in
+    ) { name, species, moistureEntityId, photoData in
         print("Create plant:", name)
         print("Species:", species ?? "None")
         print("Photo bytes:", photoData?.count ?? 0)
+        print("Moisture Sensor Entity ID:", moistureEntityId ?? "None")
     }
 }

@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "water_can.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

@@ -24,12 +24,14 @@ final class PlantsViewModel: ObservableObject {
         name: String,
         roomId: String,
         species: String? = nil,
+        moistureEntityId: String? = nil,
         photoData: Data? = nil
     ) async throws {
         var plant = try await api.createPlant(
             name: name,
             roomId: roomId,
-            species: species
+            species: species,
+            moistureEntityId: moistureEntityId
         )
 
         if let photoData {
@@ -50,16 +52,66 @@ final class PlantsViewModel: ObservableObject {
         plants.append(plant)
     }
 
-    func loadPlants(roomId: String) async {
-        isLoading = true
-        errorMessage = nil
+    @discardableResult
+    func waterPlant(
+        plantId: String
+    ) async throws -> Plant {
+        let updatedPlant = try await api.createWaterPlant(
+            plantId: plantId
+        )
+
+        if let index = plants.firstIndex(
+            where: { $0.id == plantId }
+        ) {
+            plants[index] = updatedPlant
+        }
+
+        return updatedPlant
+    }
+
+    func loadPlants(
+        roomId: String,
+        showLoadingIndicator: Bool = true
+    ) async {
+        print("loadPlants called for:", roomId)
+
+        if showLoadingIndicator {
+            isLoading = true
+            errorMessage = nil
+        }
 
         defer {
-            isLoading = false
+            if showLoadingIndicator {
+                isLoading = false
+            }
         }
 
         do {
-            plants = try await api.getPlants(roomId: roomId)
+            let loadedPlants = try await api.getPlants(
+                roomId: roomId
+            )
+
+            print(
+                "Received plants:",
+                loadedPlants.map {
+                    ($0.name, $0.lastWateredAt as Any)
+                }
+            )
+
+            plants = loadedPlants
+            errorMessage = nil
+        } catch is CancellationError {
+            print(
+                "Plant task cancelled:",
+                Task.isCancelled
+            )
+        } catch let error as URLError
+            where error.code == .cancelled
+        {
+            print(
+                "Plant URL request cancelled:",
+                Task.isCancelled
+            )
         } catch {
             errorMessage = error.localizedDescription
             print("Failed to load plants:", error)

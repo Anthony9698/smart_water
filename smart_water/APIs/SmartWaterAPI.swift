@@ -43,6 +43,10 @@ struct SmartWaterAPI {
         )
     }
 
+    func getMoistureSensors() async throws -> [MoistureSensor] {
+        try await get(path: "api/ha/moisture-sensors")
+    }
+
     func createRoom(name: String) async throws -> Room {
         let payload = CreateRoomRequest(name: name)
 
@@ -55,15 +59,28 @@ struct SmartWaterAPI {
     func createPlant(
         name: String,
         roomId: String,
-        species: String? = nil
+        species: String? = nil,
+        moistureEntityId: String? = nil
     ) async throws -> Plant {
         let payload = CreatePlantRequest(
             name: name,
             roomId: roomId,
-            species: species
+            species: species,
+            moistureEntityId: moistureEntityId
         )
 
         return try await post(path: "api/plants", body: payload)
+    }
+
+    func createWaterPlant(plantId: String) async throws -> Plant {
+        let url = makeURL(
+            path: "api/plants/\(plantId)/watered"
+        )
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        return try await send(request)
     }
 
     func uploadPlantPhoto(
@@ -176,6 +193,7 @@ struct SmartWaterAPI {
 
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
+        decoder.dateDecodingStrategy = .iso8601
 
         return try decoder.decode(Response.self, from: data)
     }
