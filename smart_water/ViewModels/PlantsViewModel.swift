@@ -23,13 +23,30 @@ final class PlantsViewModel: ObservableObject {
     func createPlant(
         name: String,
         roomId: String,
-        species: String? = nil
+        species: String? = nil,
+        photoData: Data? = nil
     ) async throws {
-        let plant = try await api.createPlant(
+        var plant = try await api.createPlant(
             name: name,
             roomId: roomId,
             species: species
         )
+
+        if let photoData {
+            do {
+                plant = try await api.uploadPlantPhoto(
+                    plantId: plant.id,
+                    photoData: photoData
+                )
+            } catch {
+                errorMessage = """
+                The plant was created, but its photo could not be uploaded.
+                """
+
+                print("Photo upload failed:", error)
+            }
+        }
+
         plants.append(plant)
     }
 

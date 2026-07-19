@@ -7,6 +7,12 @@
 
 import Foundation
 
+enum AppConfiguration {
+    static let apiBaseURL = URL(
+        string: "http://192.168.68.64:8000"
+    )!
+}
+
 enum APIError: Error {
     case invalidResponse
     case httpError(statusCode: Int)
@@ -14,6 +20,12 @@ enum APIError: Error {
 
 struct SmartWaterAPI {
     let baseURL: URL
+
+    init(
+        baseURL: URL = AppConfiguration.apiBaseURL
+    ) {
+        self.baseURL = baseURL
+    }
 
     func getRooms() async throws -> [Room] {
         try await get(path: "api/rooms")
@@ -52,6 +64,51 @@ struct SmartWaterAPI {
         )
 
         return try await post(path: "api/plants", body: payload)
+    }
+
+    func uploadPlantPhoto(
+        plantId: String,
+        photoData: Data
+    ) async throws -> Plant {
+        let url = makeURL(
+            path: "api/plants/\(plantId)/photo"
+        )
+
+        let boundary = UUID().uuidString
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue(
+            "multipart/form-data; boundary=\(boundary)",
+            forHTTPHeaderField: "Content-Type"
+        )
+
+        var body = Data()
+
+        body.append(
+            Data("--\(boundary)\r\n".utf8)
+        )
+
+        body.append(
+            Data(
+                """
+                Content-Disposition: form-data; name="photo"; filename="plant.jpg"\r
+                Content-Type: image/jpeg\r
+                \r
+
+                """.utf8
+            )
+        )
+
+        body.append(photoData)
+
+        body.append(
+            Data("\r\n--\(boundary)--\r\n".utf8)
+        )
+
+        request.httpBody = body
+
+        return try await send(request)
     }
 
     private func get<Response: Decodable>(

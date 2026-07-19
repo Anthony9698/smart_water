@@ -8,22 +8,28 @@
 import SwiftUI
 
 struct PlantModalView: View {
-    let name: String
-    let pictureUrl: String
-    let lastWateredActivity = [
-        LastWateredActivity(lastWatered: "Today", timeWateredSeconds: 3),
-        LastWateredActivity(lastWatered: "Today", timeWateredSeconds: 3)
-    ]
+    let plant: Plant
+    private var photoURL: URL? {
+        guard let photoPath = plant.photoUrl else {
+            return nil
+        }
+
+        return URL(
+            string: photoPath,
+            relativeTo: AppConfiguration.apiBaseURL
+        )?.absoluteURL
+    }
+
     @Environment(\.dismiss) var dismissModal
-    
+
     var body: some View {
-        VStack() {
-            HStack() {
-                Text(name)
+        VStack {
+            HStack {
+                Text(plant.name.capitalized)
                     .foregroundStyle(Color.black)
                     .padding(24)
                 Spacer()
-                Button(action: {dismissModal()}) {
+                Button(action: { dismissModal() }) {
                     Image(systemName: "xmark")
                         .scaledToFit()
                         .frame(width: 50, height: 50)
@@ -32,75 +38,84 @@ struct PlantModalView: View {
             }
 
             VStack(alignment: .center) {
-                AsyncImage(url: URL(string: pictureUrl)) { phase in
-                    switch phase {
-                    case .empty:
-                        ProgressView()
+                plantImage
+                    .frame(width: 200, height: 200)
+                    .background(Color.gray.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .clipped()
 
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-
-                    case .failure:
-                        Image(systemName: "photo")
-                            .resizable()
-                            .scaledToFit()
-                            .foregroundStyle(.gray)
-                            .padding(50)
-
-                    @unknown default:
-                        EmptyView()
-                    }
-                }
-                .frame(width: 200, height: 200)
-                .background(Color.gray.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .clipped()
-                
                 Button(action: {}) {
-                    Text("WATER")
+                    Text("water".capitalized)
                         .foregroundStyle(Color.white)
                         .frame(width: 100, height: 48)
                         .fontWeight(.bold)
-
                 }
                 .background(Color.blue)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            Spacer()
-            VStack(alignment: .leading) {
-                Text("Recent Water Activity")
-                    .foregroundStyle(Color.black)
-                VStack(spacing: 0) {
-                    ForEach(lastWateredActivity, id: \.id) { activity in
-                        LastWateredCardView(lastWatered: activity.lastWatered, timeWateredSeconds: activity.timeWateredSeconds)
-                    }
-                }
-            }
-            Spacer()
         }
         .background(Color.white)
         .navigationBarBackButtonHidden(true)
+        Spacer()
     }
-}
 
-struct LastWateredActivity: Identifiable {
-    let id = UUID()
-    let lastWatered: String
-    let timeWateredSeconds: Int
+    @ViewBuilder
+    private var plantImage: some View {
+        if let photoURL {
+            AsyncImage(url: photoURL) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+
+                case let .success(image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+
+                case .failure:
+                    placeholderImage
+
+                @unknown default:
+                    placeholderImage
+                }
+            }
+        } else {
+            placeholderImage
+        }
+    }
+
+    private var placeholderImage: some View {
+        Image(systemName: "leaf.fill")
+            .resizable()
+            .scaledToFit()
+            .padding(14)
+            .foregroundStyle(.green)
+            .background(Color.green.opacity(0.1))
+            .clipShape(
+                RoundedRectangle(cornerRadius: 10)
+            )
+    }
 }
 
 #Preview {
     @Previewable @State var isShowingStandardModal = false
-    VStack() {
+    VStack {
         Text("Main Screen")
-        Button(action: {isShowingStandardModal = true}) {
+        Button(action: { isShowingStandardModal = true }) {
             Text("Open Modal")
         }
         .sheet(isPresented: $isShowingStandardModal) {
-            PlantModalView(name: "Monstera", pictureUrl: "https://placehold.co/200x200/dddddd/999999/png")
+            PlantModalView(
+                plant: Plant(
+                    id: "preview-plant",
+                    name: "Monstera",
+                    roomId: "preview-room",
+                    species: "Monstera deliciosa",
+                    moistureEntityId: nil,
+                    pumpEntityId: nil,
+                    photoUrl: nil
+                )
+            )
         }
     }
 }
-

@@ -10,27 +10,24 @@ import SwiftUI
 struct RoomsView: View {
     @State private var isShowingAddRoom = false
     @StateObject private var viewModel = RoomsViewModel(
-        api: SmartWaterAPI(
-            baseURL: URL(string: "http://192.168.68.64:8000")!
-        )
+        api: SmartWaterAPI()
     )
-    
+
     let columns = [
         GridItem(.flexible(), spacing: 32),
-        GridItem(.flexible(), spacing: 32)
+        GridItem(.flexible(), spacing: 32),
     ]
-    
+
     var body: some View {
         NavigationStack {
             VStack(alignment: .center, spacing: 0) {
                 ScrollView {
                     if viewModel.isLoading && viewModel.rooms.isEmpty {
                         ProgressView("Loading rooms...")
-                    }
-                    else {
+                    } else {
                         LazyVGrid(columns: columns, spacing: 24) {
                             ForEach(viewModel.rooms) { room in
-                                NavigationLink() {
+                                NavigationLink {
                                     RoomView(room: room)
                                 } label: {
                                     RoomCardView(room: room)

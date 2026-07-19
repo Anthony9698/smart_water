@@ -12,9 +12,7 @@ struct RoomView: View {
 
     @State private var isShowingAddPlant = false
     @StateObject private var viewModel = PlantsViewModel(
-        api: SmartWaterAPI(
-            baseURL: URL(string: "http://192.168.68.64:8000")!
-        )
+        api: SmartWaterAPI()
     )
 
     @Environment(\.dismiss) private var dismiss
@@ -44,11 +42,12 @@ struct RoomView: View {
                 }
             }
             .sheet(isPresented: $isShowingAddPlant) {
-                AddPlantView(room: room) { name, species in
+                AddPlantView(room: room) { name, species, photoData in
                     try await viewModel.createPlant(
                         name: name,
                         roomId: room.id,
-                        species: species
+                        species: species,
+                        photoData: photoData
                     )
                 }
             }
@@ -83,8 +82,7 @@ struct RoomView: View {
         .navigationBarBackButtonHidden(true)
         .sheet(item: $selectedPlant) { plant in
             PlantModalView(
-                name: plant.name,
-                pictureUrl: "https://placehold.co/200x200/dddddd/999999/png"
+                plant: plant
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
