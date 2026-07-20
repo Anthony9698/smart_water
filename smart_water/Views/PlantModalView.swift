@@ -8,18 +8,44 @@
 import SwiftUI
 
 struct PlantModalView: View {
+    enum Mode {
+        case details
+        case editing
+    }
+
     @State private var plant: Plant
     @State private var isWatering = false
     @State private var errorMessage: String?
+    @State private var mode: Mode = .details
 
+    @Environment(\.dismiss) private var dismiss
     let onWater: (String) async throws -> Plant
+    let onUpdate: (
+        String, // plantId
+        String, // name
+        String, // roomId
+        String?, // species
+        String?, // sensorId
+        Data? // photoData
+    ) async throws -> Plant
 
     init(
         plant: Plant,
-        onWater: @escaping (String) async throws -> Plant
+        onWater: @escaping (
+            String
+        ) async throws -> Plant,
+        onUpdate: @escaping (
+            String, // plant ID
+            String, // name
+            String, // room ID
+            String?, // species
+            String?, // sensor ID
+            Data? // new photo
+        ) async throws -> Plant
     ) {
         _plant = State(initialValue: plant)
         self.onWater = onWater
+        self.onUpdate = onUpdate
     }
 
     private var photoURL: URL? {
@@ -36,62 +62,37 @@ struct PlantModalView: View {
     @Environment(\.dismiss) var dismissModal
 
     var body: some View {
-        VStack {
-            HStack {
-                Text(plant.name.capitalized)
-                    .foregroundStyle(Color.black)
-                    .padding(24)
-                Spacer()
-                Button(action: { dismissModal() }) {
-                    Image(systemName: "xmark")
-                        .scaledToFit()
-                        .frame(width: 50, height: 50)
-                        .foregroundStyle(Color.black)
-                }
-            }
+        NavigationStack {
+            switch mode {
+            case .details:
+                plantDetails
 
-            VStack(alignment: .center) {
-                plantImage
-                    .frame(width: 200, height: 200)
-                    .background(Color.gray.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .clipped()
-
-                Button {
-                    Task {
-                        isWatering = true
-                        errorMessage = nil
-
-                        do {
-                            plant = try await onWater(plant.id)
-                        } catch {
-                            errorMessage = error.localizedDescription
-                        }
-
-                        isWatering = false
-                    }
-                } label: {
-                    Text(isWatering ? "Watering..." : "Water")
-                        .fontWeight(.bold)
-                        .foregroundStyle(.white)
-                        .frame(width: 100, height: 48)
-                        .background(.blue)
-                        .clipShape(
-                            RoundedRectangle(cornerRadius: 10)
+            case .editing:
+                EditPlantView(
+                    plant: plant,
+                    onCancel: {
+                        mode = .details
+                    },
+                    onSave: {
+                        name,
+                        roomId,
+                        species,
+                        sensorId,
+                        photoData in
+                        plant = try await onUpdate(
+                            plant.id,
+                            name,
+                            roomId,
+                            species,
+                            sensorId,
+                            photoData
                         )
-                }
-                .disabled(isWatering)
-                .buttonStyle(.plain)
 
-                if let errorMessage {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
-                }
+                        mode = .details
+                    }
+                )
             }
         }
-        .background(Color.white)
-        .navigationBarBackButtonHidden(true)
-        Spacer()
     }
 
     @ViewBuilder
@@ -119,6 +120,86 @@ struct PlantModalView: View {
         }
     }
 
+    private func waterPlant() {
+        Task {
+            isWatering = true
+            errorMessage = nil
+
+            defer {
+                isWatering = false
+            }
+
+            do {
+                plant = try await onWater(plant.id)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private var plantDetails: some View {
+        VStack {
+            plantImage
+                .frame(width: 200, height: 200)
+                .background(Color.gray.opacity(0.15))
+                .clipShape(
+                    RoundedRectangle(cornerRadius: 16)
+                )
+                .clipped()
+
+            if let species = plant.species {
+                Text(species)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button {
+                waterPlant()
+            } label: {
+                Text(
+                    isWatering
+                        ? "Watering..."
+                        : "Water"
+                )
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .frame(width: 100, height: 48)
+                .background(.blue)
+                .clipShape(
+                    RoundedRectangle(cornerRadius: 10)
+                )
+            }
+            .disabled(isWatering)
+            .buttonStyle(.plain)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .foregroundStyle(.red)
+            }
+
+            Spacer()
+        }
+        .padding()
+        .navigationTitle(plant.name.capitalized)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(
+                placement: .cancellationAction
+            ) {
+                Button("Close") {
+                    dismiss()
+                }
+            }
+
+            ToolbarItem(
+                placement: .primaryAction
+            ) {
+                Button("Edit") {
+                    mode = .editing
+                }
+            }
+        }
+    }
+
     private var placeholderImage: some View {
         Image(systemName: "leaf.fill")
             .resizable()
@@ -133,7 +214,8 @@ struct PlantModalView: View {
 }
 
 #Preview {
-    @Previewable @State var isShowingStandardModal = false
+    @Previewable @State
+    var isShowingStandardModal = false
 
     let previewPlant = Plant(
         id: "preview-plant",
@@ -143,28 +225,71 @@ struct PlantModalView: View {
         moistureEntityId: "sensor.soil_moisture_1",
         pumpEntityId: nil,
         photoUrl: nil,
-        lastWateredAt: Date().addingTimeInterval(-3600)
+        lastWateredAt: Date()
+            .addingTimeInterval(-3600)
     )
+
     VStack {
         Text("Main Screen")
-        Button(action: { isShowingStandardModal = true }) {
-            Text("Open Modal")
+
+        Button("Open Modal") {
+            isShowingStandardModal = true
         }
-        .sheet(isPresented: $isShowingStandardModal) {
+        .sheet(
+            isPresented: $isShowingStandardModal
+        ) {
             PlantModalView(
                 plant: previewPlant,
                 onWater: { plantId in
-                    print("Watering preview plant:", plantId)
+                    print(
+                        "Watering preview plant:",
+                        plantId
+                    )
 
                     return Plant(
                         id: previewPlant.id,
                         name: previewPlant.name,
                         roomId: previewPlant.roomId,
                         species: previewPlant.species,
-                        moistureEntityId: previewPlant.moistureEntityId,
-                        pumpEntityId: previewPlant.pumpEntityId,
+                        moistureEntityId:
+                        previewPlant.moistureEntityId,
+                        pumpEntityId:
+                        previewPlant.pumpEntityId,
                         photoUrl: previewPlant.photoUrl,
                         lastWateredAt: Date()
+                    )
+                },
+                onUpdate: {
+                    plantId,
+                    name,
+                    roomId,
+                    species,
+                    sensorId,
+                    photoData in
+                    print("Updating plant:", plantId)
+                    print("Name:", name)
+                    print("Room ID:", roomId)
+                    print("Species:", species ?? "None")
+                    print(
+                        "Sensor ID:",
+                        sensorId ?? "None"
+                    )
+                    print(
+                        "Photo bytes:",
+                        photoData?.count ?? 0
+                    )
+
+                    return Plant(
+                        id: plantId,
+                        name: name,
+                        roomId: roomId,
+                        species: species,
+                        moistureEntityId: sensorId,
+                        pumpEntityId:
+                        previewPlant.pumpEntityId,
+                        photoUrl: previewPlant.photoUrl,
+                        lastWateredAt:
+                        previewPlant.lastWateredAt
                     )
                 }
             )

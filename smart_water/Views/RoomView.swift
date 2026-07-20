@@ -9,19 +9,22 @@ import SwiftUI
 
 struct RoomView: View {
     let room: Room
+
     @State private var isShowingAddPlant = false
+    @State private var selectedPlant: Plant?
+
     @StateObject private var viewModel = PlantsViewModel(
         api: SmartWaterAPI()
     )
 
     @Environment(\.dismiss) private var dismiss
 
-    @State private var selectedPlant: Plant?
-
     var body: some View {
         VStack {
             ScrollView {
-                if viewModel.isLoading && viewModel.plants.isEmpty {
+                if viewModel.isLoading &&
+                    viewModel.plants.isEmpty
+                {
                     ProgressView("Loading plants...")
                 } else {
                     VStack(spacing: 12) {
@@ -58,26 +61,36 @@ struct RoomView: View {
                 showLoadingIndicator: true
             )
         }
-        .navigationTitle("\(room.name) Plants".capitalized)
+        .navigationTitle(
+            "\(room.name) Plants".capitalized
+        )
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
+            ToolbarItem(
+                placement: .cancellationAction
+            ) {
                 Button("Back") {
                     dismiss()
                 }
             }
-            ToolbarItem(placement: .primaryAction) {
+
+            ToolbarItem(
+                placement: .primaryAction
+            ) {
                 Button {
                     isShowingAddPlant = true
                 } label: {
-                    Label("Add Plant", systemImage: "plus")
+                    Label(
+                        "Add Plant",
+                        systemImage: "plus"
+                    )
                 }
             }
         }
         .padding(.top, 32)
         .padding(.bottom, 32)
         .background(Color.white)
-        .navigationBarBackButtonHidden(true)
         .sheet(isPresented: $isShowingAddPlant) {
             AddPlantView(room: room) {
                 name,
@@ -88,19 +101,38 @@ struct RoomView: View {
                     name: name,
                     roomId: room.id,
                     species: species,
-                    moistureEntityId: selectedSensorId,
+                    moistureEntityId:
+                    selectedSensorId,
                     photoData: photoData
                 )
             }
         }
         .sheet(item: $selectedPlant) { plant in
             PlantModalView(
-                plant: plant
-            ) { plantId in
-                try await viewModel.waterPlant(
-                    plantId: plantId
-                )
-            }
+                plant: plant,
+                onWater: { plantId in
+                    try await viewModel.waterPlant(
+                        plantId: plantId
+                    )
+                },
+                onUpdate: {
+                    plantId,
+                    name,
+                    roomId,
+                    species,
+                    sensorId,
+                    photoData in
+                    try await viewModel.updatePlant(
+                        plantId: plantId,
+                        name: name,
+                        roomId: roomId,
+                        species: species,
+                        moistureEntityId: sensorId,
+                        photoData: photoData,
+                        currentRoomId: room.id
+                    )
+                }
+            )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
@@ -108,13 +140,15 @@ struct RoomView: View {
 }
 
 #Preview {
+    let kitchen = Room(
+        id: "preview-room",
+        name: "Kitchen",
+        plantCount: 1
+    )
+
     NavigationStack {
         RoomView(
-            room: Room(
-                id: "preview-room",
-                name: "Kitchen",
-                plantCount: 0
-            )
+            room: kitchen
         )
     }
 }

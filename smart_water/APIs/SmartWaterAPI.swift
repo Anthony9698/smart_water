@@ -72,6 +72,26 @@ struct SmartWaterAPI {
         return try await post(path: "api/plants", body: payload)
     }
 
+    func updatePlant(
+        plantId: String,
+        name: String,
+        roomId: String,
+        species: String?,
+        moistureEntityId: String?
+    ) async throws -> Plant {
+        let payload = UpdatePlantRequest(
+            name: name,
+            roomId: roomId,
+            species: species,
+            moistureEntityId: moistureEntityId
+        )
+
+        return try await patch(
+            path: "api/plants/\(plantId)",
+            body: payload
+        )
+    }
+
     func createWaterPlant(plantId: String) async throws -> Plant {
         let url = makeURL(
             path: "api/plants/\(plantId)/watered"
@@ -169,6 +189,30 @@ struct SmartWaterAPI {
 
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
+        request.httpBody = try encoder.encode(body)
+
+        return try await send(request)
+    }
+
+    private func patch<
+        Body: Encodable,
+        Response: Decodable
+    >(
+        path: String,
+        body: Body
+    ) async throws -> Response {
+        let url = makeURL(path: path)
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue(
+            "application/json",
+            forHTTPHeaderField: "Content-Type"
+        )
+
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
         request.httpBody = try encoder.encode(body)
 
         return try await send(request)

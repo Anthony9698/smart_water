@@ -53,6 +53,45 @@ final class PlantsViewModel: ObservableObject {
     }
 
     @discardableResult
+    func updatePlant(
+        plantId: String,
+        name: String,
+        roomId: String,
+        species: String?,
+        moistureEntityId: String?,
+        photoData: Data?,
+        currentRoomId: String
+    ) async throws -> Plant {
+        var updatedPlant = try await api.updatePlant(
+            plantId: plantId,
+            name: name,
+            roomId: roomId,
+            species: species,
+            moistureEntityId: moistureEntityId
+        )
+
+        if let photoData {
+            updatedPlant = try await api.uploadPlantPhoto(
+                plantId: plantId,
+                photoData: photoData
+            )
+        }
+
+        if let index = plants.firstIndex(
+            where: { $0.id == plantId }
+        ) {
+            if updatedPlant.roomId == currentRoomId {
+                plants[index] = updatedPlant
+            } else {
+                // The plant was moved to another room.
+                plants.remove(at: index)
+            }
+        }
+
+        return updatedPlant
+    }
+
+    @discardableResult
     func waterPlant(
         plantId: String
     ) async throws -> Plant {
