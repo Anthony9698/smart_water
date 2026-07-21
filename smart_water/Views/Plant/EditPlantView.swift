@@ -11,7 +11,7 @@ import UIKit
 
 struct EditPlantView: View {
     let plant: Plant
-    let onCancel: () -> Void = {}
+    let onCancel: () -> Void
     let onSave: (
         String, // name
         String, // room ID
@@ -46,7 +46,7 @@ struct EditPlantView: View {
 
     init(
         plant: Plant,
-        onCancel _: @escaping () -> Void = {},
+        onCancel: @escaping () -> Void = {},
         onSave: @escaping (
             String,
             String,
@@ -56,6 +56,7 @@ struct EditPlantView: View {
         ) async throws -> Void
     ) {
         self.plant = plant
+        self.onCancel = onCancel
         self.onSave = onSave
 
         _name = State(initialValue: plant.name)
